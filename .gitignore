@@ -1,0 +1,5 @@
+Debug/
+*.cycle
+*.hex
+*.elf
+*.bin
