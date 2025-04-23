@@ -14,7 +14,7 @@
 #include "stm32f4xx_hal.h"
 
 #include <stdint.h>
-#include "../../Drivers/Modbus_RTU_C_Lib/Modbus_Slave.h"
+#include "../../Drivers/Modbus_RTU_C/Modbus_Slave.h"
 #include "Modbus_RegMap.h"
 
 extern UART_HandleTypeDef huart1;

@@ -1,7 +1,7 @@
 #ifndef Modbus_RegMap_h
 #define Modbus_RegMap_h
 
-#include "../../Drivers/Modbus_RTU_C_Lib/Modbus_Slave.h"
+#include "../../Drivers/Modbus_RTU_C/Modbus_Slave.h"
 #include "../HMI_Modbus/NV_Params.h"
 
 extern MB_Slave_t MB;
