@@ -16,8 +16,10 @@
 #include "../HMI_Modbus/HMI_Modbus.h"
 #include "../Inc/Modbus_EEPROM_SL.h"
 #include "../../Drivers/PI/PI.h"
+#include "Feedback_CAN.h"
 
 extern ADC_HandleTypeDef hadc1;
+ extern CAN_FilterTypeDef canFilterConfig;
 
 extern CAN_HandleTypeDef hcan1;
 
@@ -38,7 +40,7 @@ extern const SystemParams_t DefaultParams;
 extern PI_Handle_t PI_Handle;
 
 #define KC 0.9
-#define MaxOut 500 //Maximum allowed output (saturation limit)
+#define MaxOut 1500 //Maximum allowed output (saturation limit)
 
 //modbus slave addreese
 #define SLA 0x1
@@ -49,4 +51,5 @@ void Application_Init();
 
 void Application_Run();
 void Compute_Analog_Measurements();
+void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan1);
 #endif /* INC_APPLICATION_H_ */
