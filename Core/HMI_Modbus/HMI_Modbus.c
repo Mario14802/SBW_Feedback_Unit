@@ -27,7 +27,8 @@ void UART1_ErrorCallback(UART_HandleTypeDef *huart) {
 
 // Wrapper function to transmit data over UART1
 MB_Status_t MB_Transmit_Data(uint8_t *data, uint16_t Len) {
-	return HAL_UART_Transmit_DMA(uart, data, Len) == HAL_OK ?
+	return   HAL_UART_Transmit_DMA(uart, data, Len) == HAL_OK ?
+			//HAL_UART_Transmit_IT(uart, data, Len) == HAL_OK ?
 			MB_STAT_OK : MB_TX_ERR_HW;
 }
 
@@ -43,6 +44,7 @@ MB_Status_t MB_Activate_TX(uint8_t TXON) {
 MB_Status_t MB_StartListening() {
 	// Start receiving data either until the buffer is filled or the data stream is finished (data line returns to idle)
 	HAL_UARTEx_ReceiveToIdle_IT(uart, MB.RxBuffer, MB.TX_RX_Buffer_Size);
+	//HAL_UARTEx_ReceiveToIdle_DMA(uart, MB.RxBuffer, MB.TX_RX_Buffer_Size);
 	return MB_STAT_OK;
 }
 

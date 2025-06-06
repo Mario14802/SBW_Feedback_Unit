@@ -56,6 +56,7 @@ TIM_HandleTypeDef htim8;
 
 UART_HandleTypeDef huart1;
 DMA_HandleTypeDef hdma_usart1_tx;
+DMA_HandleTypeDef hdma_usart1_rx;
 
 /* USER CODE BEGIN PV */
 
@@ -66,7 +67,6 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_ADC1_Init(void);
-static void MX_CAN1_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_TIM1_Init(void);
 static void MX_TIM5_Init(void);
@@ -74,6 +74,7 @@ static void MX_TIM8_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_TIM6_Init(void);
 static void MX_TIM4_Init(void);
+static void MX_CAN1_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -114,7 +115,6 @@ int main(void)
   MX_GPIO_Init();
   MX_DMA_Init();
   MX_ADC1_Init();
-  MX_CAN1_Init();
   MX_SPI1_Init();
   MX_TIM1_Init();
   MX_TIM5_Init();
@@ -123,6 +123,7 @@ int main(void)
   MX_USB_DEVICE_Init();
   MX_TIM6_Init();
   MX_TIM4_Init();
+  MX_CAN1_Init();
   /* USER CODE BEGIN 2 */
 	Application_Init();
 	Application_Run();
@@ -337,9 +338,6 @@ static void MX_CAN1_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN CAN1_Init 2 */
-
-
-
 
   /* USER CODE END CAN1_Init 2 */
 
@@ -718,6 +716,9 @@ static void MX_DMA_Init(void)
   /* DMA2_Stream0_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA2_Stream0_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA2_Stream0_IRQn);
+  /* DMA2_Stream2_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Stream2_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Stream2_IRQn);
   /* DMA2_Stream7_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA2_Stream7_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA2_Stream7_IRQn);

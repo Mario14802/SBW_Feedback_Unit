@@ -16,20 +16,23 @@
 #include "../HMI_Modbus/HMI_Modbus.h"
 #include "../Inc/Modbus_EEPROM_SL.h"
 #include "../../Drivers/PI/PI.h"
+#include "../../Drivers/Incremntal Encoder/Encoder.h"
 #include "Feedback_CAN.h"
 
 extern ADC_HandleTypeDef hadc1;
- extern CAN_FilterTypeDef canFilterConfig;
+extern CAN_FilterTypeDef canFilterConfig;
 
 extern CAN_HandleTypeDef hcan1;
 
-extern I2C_HandleTypeDef hi2c1;
+//extern I2C_HandleTypeDef hi2c1;
 
 extern SPI_HandleTypeDef hspi1;
 
-extern TIM_HandleTypeDef htim1;
-extern TIM_HandleTypeDef htim5;
-extern TIM_HandleTypeDef htim8;
+extern TIM_HandleTypeDef htim1;//
+extern TIM_HandleTypeDef htim4; //encoder timer
+extern TIM_HandleTypeDef htim5;//trigger adc
+extern TIM_HandleTypeDef htim6;//pi evaluate
+extern TIM_HandleTypeDef htim8;//motor timer
 
 extern UART_HandleTypeDef huart1;
 
@@ -51,5 +54,5 @@ void Application_Init();
 
 void Application_Run();
 void Compute_Analog_Measurements();
-void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan1);
+//void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan1);
 #endif /* INC_APPLICATION_H_ */
