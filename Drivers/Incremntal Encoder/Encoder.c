@@ -7,23 +7,27 @@
 
 
 #include "Encoder.h"
-float encoder_angle(int32_t Timer_counter)
+
+float angle_accum = 0.0f;
+int32_t prev_count = 0;
+
+float get_encoder_angle(int32_t Timer_counter)
 {
-	int32_t encoder_count = 0;
-	float encoder_angle = 0.0f;
+    static float angle_accum = 0.0f;    // lives for the entire program
+    static int32_t prev_count  = 0;
 
-	encoder_count =  Timer_counter;
+    int32_t encoder_count = Timer_counter;
+    int32_t delta = encoder_count - prev_count;
+    if      (delta >  (PPR/2)) delta -= PPR;
+    else if (delta < -(PPR/2)) delta += PPR;
 
-	// Convert to angle
-	encoder_angle = ((float)encoder_count /PPR) * 360.0f;
+    // accumulate
+    angle_accum += (float)delta * ANGLE_PER_COUNT;
 
-	// Optional: wrap angle to [0, 360)
-	if (encoder_angle >= 360.0f)
-		encoder_angle -= 360.0f;
-	else if (encoder_angle < 0.0f)
-		encoder_angle += 360.0f;
+    // clamp if you really need to cap at ±180°
+    if      (angle_accum >  180.0f) angle_accum =  180.0f;
+    else if (angle_accum < -180.0f) angle_accum = -180.0f;
 
-	return encoder_angle;
-
-
+    prev_count = encoder_count;
+    return angle_accum;
 }

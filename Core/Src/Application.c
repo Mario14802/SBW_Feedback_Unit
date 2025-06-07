@@ -63,7 +63,7 @@ void Application_Init(void)
 
 
 	//-------------- Encoder Timer (TIM4) initialization --------------//
-	  HAL_TIM_Encoder_Start_IT(&htim4, TIM_CHANNEL_ALL);
+	HAL_TIM_Encoder_Start_IT(&htim4, TIM_CHANNEL_ALL);
 
 	//-------------- Motor timer (TIM8) initialization --------------//
 	HAL_TIM_Base_Start(&htim8);
@@ -107,7 +107,7 @@ inline void Application_Run(void)
 		// Modbus routine
 		MB_Slave_Routine(&MB, HAL_GetTick());
 
-	// Prepare and send CAN message
+		// Prepare and send CAN message
 		PrepareCANMessage(TxData, V1, V2, V3, V4);
 		if (HAL_CAN_GetTxMailboxesFreeLevel(&hcan1) == 3) {
 			if (HAL_CAN_AddTxMessage(&hcan1, &TxHeader, TxData, &TxMailbox) != HAL_OK) {
@@ -119,15 +119,29 @@ inline void Application_Run(void)
 		//Encoder_Angle
 		if(GetCoil(MB_Coil_TimerCNT_Reset))//if coil =1
 		{
-		__HAL_TIM_GET_COUNTER(&htim4)=0;
-		SetCoil(MB_Coil_TimerCNT_Reset, 0);
+			__HAL_TIM_GET_COUNTER(&htim4)=0;
+			SetCoil(MB_Coil_TimerCNT_Reset, 0);
 		}
 
-		Encoder_Angle= encoder_angle((int32_t)__HAL_TIM_GET_COUNTER(&htim4));
+		Encoder_Angle= get_encoder_angle((int32_t)__HAL_TIM_GET_COUNTER(&htim4));
 
 
-		 //ADC VALUES
-		 Compute_Analog_Measurements();
+		// LED indication based on movement direction
+		if (Encoder_Angle < 0) {
+			// Clockwise movement → LEDs OFF
+			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13|GPIO_PIN_14, GPIO_PIN_SET);
+			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_15, GPIO_PIN_RESET);
+		} else if (Encoder_Angle > 0) {
+			// Counter-clockwise movement → LEDs ON
+			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_15, GPIO_PIN_SET);
+			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13|GPIO_PIN_14, GPIO_PIN_RESET);
+		}
+
+	//	HAL_Delay(5);
+
+
+		//ADC VALUES
+		Compute_Analog_Measurements();
 
 		// PI control update every 5 ms
 		if (HAL_GetTick() >= PID_Ticks) {
@@ -146,7 +160,7 @@ inline void Application_Run(void)
 					Iregs->Motor_PWM_Out = fabsf(Iregs->Motor_PWM_Out);
 					__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_1, 0);
 					//__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_2,
-							//        (uint16_t )PI_Control_Duty);
+					//        (uint16_t )PI_Control_Duty);
 					//__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_2, (uint16_t )Iregs->Motor_PWM_Out);
 				}
 			} else {
@@ -176,10 +190,10 @@ void Compute_Analog_Measurements(void)
 {
 	//calculate the Vbus voltage
 	Iregs->Vbus = ((float) Iregs->ADC_Raw_Values[1] * (DefaultParams.Vmotor_Sense_Gain))
-                		  - (DefaultParams.Vmotor_Sense_Offset);
+                				  - (DefaultParams.Vmotor_Sense_Offset);
 	Iregs->I_OUT = ((float) Iregs->ADC_Raw_Values[0] * (DefaultParams.I_Sense_Gain)
 			- (DefaultParams.I_Sense_Offset + DefaultParams.Amplifier_offset))
-                		   * 1000.0f;
+                				   * 1000.0f;
 }
 
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)

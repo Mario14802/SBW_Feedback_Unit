@@ -9,9 +9,18 @@
 #define INCREMNTAL_ENCODER_ENCODER_H_
 
 #include <stdint.h>
+
+
 #define PPR 2400
 
-float encoder_angle(int32_t Timer_counter);
+#define ANGLE_PER_COUNT  (360.0f / PPR)
+/*
+typedef struct {
+    int32_t prev_count;
+    float   angle_accum;
+} EncoderState;
+*/
 
+float get_encoder_angle(int32_t Timer_counter);
 
 #endif /* INCREMNTAL_ENCODER_ENCODER_H_ */
