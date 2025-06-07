@@ -33,6 +33,8 @@ typedef struct InputRegs
     float Motor_PWM_Out;//6,7
     float Motor_I_Error;//8,9
 
+    float Motor_Encoder_Error;//10,11
+
     uint16_t ADC_Raw_Values[12];
 }InputRegs_t;
 //////////////////

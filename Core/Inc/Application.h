@@ -17,6 +17,7 @@
 #include "../Inc/Modbus_EEPROM_SL.h"
 #include "../../Drivers/PI/PI.h"
 #include "../../Drivers/Incremntal Encoder/Encoder.h"
+#include "../../Drivers/Interpolation/Interpolation.h"
 #include "Feedback_CAN.h"
 
 extern ADC_HandleTypeDef hadc1;
@@ -41,6 +42,9 @@ extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
 extern const SystemParams_t DefaultParams;
 
 extern PI_Handle_t PI_Handle;
+
+//interpolation
+extern mapping_t M;
 
 #define KC 0.9
 #define MaxOut 1500 //Maximum allowed output (saturation limit)

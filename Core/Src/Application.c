@@ -4,6 +4,7 @@
 // PI controller handle
 PI_Handle_t PI_Handle;
 float  Encoder_Angle=0;
+float LinerDisp;
 
 //----------------------------------------------------------------------------//
 //                             CAN-related definitions                        //
@@ -34,12 +35,14 @@ uint8_t             CAN_RxData[8];
 uint8_t             TxData[TX_SIZE] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 CAN_TxHeaderTypeDef TxHeader;
 uint32_t            TxMailbox = 0;
-int16_t             V1 = 0, V2 = 0, V3 = 0, V4 = 0;
+// values sent from feedback
+int16_t             Motor_current =0,steering_wheel_angle =0,Steering_wheel_speed ,PWM_output=0 ;
 uint32_t            Tmp = 0;
-
+//values recieved from Steering unit
 int16_t motor_current;
 int16_t Rack_position;
 int16_t Rack_force;
+//int16_t PWM_Stee;
 
 //----------------------------------------------------------------------------//
 //                             Application Initialization                     //
@@ -91,6 +94,16 @@ void Application_Init(void)
 			DefaultParams.Controller_Sampling_Time
 	);
 	HAL_TIM_Base_Start_IT(&htim6); //to call the pi evaluat fun every 5 ms
+
+
+
+	//--------------Interpolation initialization --------------//
+/*	//ENCODER VALUES
+	M->output_max = 75.0f;
+	M->output_min = -75.0f;
+	//LINEAR VALUES
+	M->input_max = 180.0f;
+	M->input_min = -180.0f;*/
 }
 
 //----------------------------------------------------------------------------//
@@ -107,13 +120,7 @@ inline void Application_Run(void)
 		// Modbus routine
 		MB_Slave_Routine(&MB, HAL_GetTick());
 
-		// Prepare and send CAN message
-		PrepareCANMessage(TxData, V1, V2, V3, V4);
-		if (HAL_CAN_GetTxMailboxesFreeLevel(&hcan1) == 3) {
-			if (HAL_CAN_AddTxMessage(&hcan1, &TxHeader, TxData, &TxMailbox) != HAL_OK) {
-				Error_Handler();  // Handle error if sending fails
-			}
-		}
+
 
 		//HAL_Delay(100);
 		//Encoder_Angle
@@ -123,8 +130,10 @@ inline void Application_Run(void)
 			SetCoil(MB_Coil_TimerCNT_Reset, 0);
 		}
 
+		//Calucate Encoder Angle
 		Encoder_Angle= get_encoder_angle((int32_t)__HAL_TIM_GET_COUNTER(&htim4));
 
+		LinerDisp =map_linear(M, Encoder_Angle);
 
 		// LED indication based on movement direction
 		if (Encoder_Angle < 0) {
@@ -137,19 +146,29 @@ inline void Application_Run(void)
 			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13|GPIO_PIN_14, GPIO_PIN_RESET);
 		}
 
-	//	HAL_Delay(5);
+		//	HAL_Delay(5);
 
 
 		//ADC VALUES
 		Compute_Analog_Measurements();
+
+		//Motor Current
+		Motor_current =Iregs->I_OUT;
+
+		//Encoder_angle
+		steering_wheel_angle =Encoder_Angle;
+
+		//Steering_wheel_speed ,
+		//PWM_output=0 ;
+
 
 		// PI control update every 5 ms
 		if (HAL_GetTick() >= PID_Ticks) {
 			if (GetCoil(MB_Coil_Enable_PI_Controller)) {
 				Iregs->Motor_PWM_Out = PI_Eval(
 						&PI_Handle,
-						Hregs->Motor_I_SP,   // sp is the desired value
-						Iregs->I_OUT         // actual current
+						Hregs->Motor_I_SP,   // sp is the desired value from the interoplation
+						Iregs->I_OUT         // actual current actual angle
 				);
 				Iregs->Motor_I_Error = PI_Handle.Error;
 
@@ -169,6 +188,17 @@ inline void Application_Run(void)
 			}
 			PID_Ticks = HAL_GetTick() + 5;  // added 5ms
 		}
+
+
+		// Prepare and send CAN message
+		PrepareCANMessage(TxData, Motor_current, steering_wheel_angle, Steering_wheel_speed, PWM_output);
+		if (HAL_CAN_GetTxMailboxesFreeLevel(&hcan1) == 3) {
+			if (HAL_CAN_AddTxMessage(&hcan1, &TxHeader, TxData, &TxMailbox) != HAL_OK) {
+				Error_Handler();  // Handle error if sending fails
+			}
+		}
+
+
 
 		if (GetCoil(MB_Coil_Update_Params)) {
 			PI_Handle.KP     = Hregs->sParams.I_Control_Kp;
@@ -190,10 +220,10 @@ void Compute_Analog_Measurements(void)
 {
 	//calculate the Vbus voltage
 	Iregs->Vbus = ((float) Iregs->ADC_Raw_Values[1] * (DefaultParams.Vmotor_Sense_Gain))
-                				  - (DefaultParams.Vmotor_Sense_Offset);
+                										  - (DefaultParams.Vmotor_Sense_Offset);
 	Iregs->I_OUT = ((float) Iregs->ADC_Raw_Values[0] * (DefaultParams.I_Sense_Gain)
 			- (DefaultParams.I_Sense_Offset + DefaultParams.Amplifier_offset))
-                				   * 1000.0f;
+                										   * 1000.0f;
 }
 
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
@@ -211,7 +241,7 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan1)
 		motor_current = Decode(RxData, 0, 11, 1);
 		Rack_position = Decode(RxData, 12, 12, 1);
 		Rack_force    = Decode(RxData, 23, 16, 1);
-		//int16_t pwm = Decode(RxData, 33, 1, 12, 1);
+		//	pwm = Decode(RxData, 33, 1, 12, 1);
 
 		sprintf(
 				uartBuffer,
