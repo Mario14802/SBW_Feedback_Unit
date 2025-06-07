@@ -10,6 +10,7 @@
 
 #include "stm32f4xx_hal.h"
 #include "main.h"
+#include "usb_device.h"
 //#include "HW_Interface.h"
 #include "../../Drivers/EEPROM_Flash/EEPROM_DRIVER.h"
 #include "../../Drivers/Motor_Driver/Motor_Driver.h"
@@ -18,6 +19,8 @@
 #include "../../Drivers/PI/PI.h"
 #include "../../Drivers/Incremntal Encoder/Encoder.h"
 #include "Feedback_CAN.h"
+#include "../../Drivers/SbW_Protocol/SBW_protocol.h"
+#include "../Hardware_Interface_USB/Hardware_Interface_USB.h"
 
 extern ADC_HandleTypeDef hadc1;
 extern CAN_FilterTypeDef canFilterConfig;
@@ -28,11 +31,11 @@ extern CAN_HandleTypeDef hcan1;
 
 extern SPI_HandleTypeDef hspi1;
 
-extern TIM_HandleTypeDef htim1;//
-extern TIM_HandleTypeDef htim4; //encoder timer
-extern TIM_HandleTypeDef htim5;//trigger adc
-extern TIM_HandleTypeDef htim6;//pi evaluate
-extern TIM_HandleTypeDef htim8;//motor timer
+extern TIM_HandleTypeDef htim1;//USB_CDC
+extern TIM_HandleTypeDef htim4;//Encoder Timer
+extern TIM_HandleTypeDef htim5;//Trigger ADC
+extern TIM_HandleTypeDef htim6;//PI evaluate
+extern TIM_HandleTypeDef htim8;//Motor Timer
 
 extern UART_HandleTypeDef huart1;
 
@@ -42,6 +45,7 @@ extern const SystemParams_t DefaultParams;
 
 extern PI_Handle_t PI_Handle;
 
+
 #define KC 0.9
 #define MaxOut 1500 //Maximum allowed output (saturation limit)
 
@@ -49,6 +53,12 @@ extern PI_Handle_t PI_Handle;
 #define SLA 0x1
 
 extern MB_Slave_t MB;
+
+extern uint8_t TxBuffer[];
+extern uint8_t RxBuffer[];
+
+#define Def_Frame_Len sizeof(DataFrame)
+#define FIFO_Depth 50
 
 void Application_Init();
 
