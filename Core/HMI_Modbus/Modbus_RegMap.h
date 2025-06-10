@@ -20,6 +20,8 @@ typedef struct HoldingRegs
 
     //part 2 is the system states that need to be read/write
     float Motor_I_SP;
+
+    float Motor_EA_SP;//Encoder angle
 }HoldingRegs_t;
 //////////////////////
 typedef struct InputRegs
@@ -28,7 +30,7 @@ typedef struct InputRegs
 
     float I_OUT;//0,1
     float Vbus;//2,3
-    float Torque;//4,5
+    float Encoder_Angle;//4,5
 
     float Motor_PWM_Out;//6,7
     float Motor_I_Error;//8,9

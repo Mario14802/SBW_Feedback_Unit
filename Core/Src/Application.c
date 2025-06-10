@@ -15,7 +15,7 @@ static void Config_CAN_Filters(void)
 	const CAN_FilterTypeDef filter = {
 			.FilterActivation      = CAN_FILTER_ENABLE,
 			.FilterBank            = 10,
-			.FilterFIFOAssignment  = CAN_RX_FIFO0,
+			.FilterFIFOAssignment  = CAN_FILTER_FIFO0,
 			.FilterIdHigh          = 0x0000,
 			.FilterIdLow           = 0x0000,
 			.FilterMaskIdHigh      = 0x0000,
@@ -111,10 +111,10 @@ void Application_Init(void)
 //----------------------------------------------------------------------------//
 inline void Application_Run(void)
 {
-	uint32_t Ticks = HAL_GetTick();
+	//uint32_t Ticks = HAL_GetTick();
 	uint32_t PID_Ticks = HAL_GetTick();
 	//
-	HAL_StatusTypeDef S;
+	//HAL_StatusTypeDef S;
 
 	while (1) {
 		// Modbus routine
@@ -161,16 +161,15 @@ inline void Application_Run(void)
 		//Steering_wheel_speed ,
 		//PWM_output=0 ;
 
-
 		// PI control update every 5 ms
 		if (HAL_GetTick() >= PID_Ticks) {
 			if (GetCoil(MB_Coil_Enable_PI_Controller)) {
 				Iregs->Motor_PWM_Out = PI_Eval(
 						&PI_Handle,
-						Hregs->Motor_I_SP,   // sp is the desired value from the interoplation
-						Iregs->I_OUT         // actual current actual angle
+						Hregs->Motor_EA_SP=LinerDisp,   // sp is the desired value from the interoplation
+						Iregs->Encoder_Angle=Encoder_Angle        // actual current actual angle
 				);
-				Iregs->Motor_I_Error = PI_Handle.Error;
+				Iregs->Motor_Encoder_Error = PI_Handle.Error;
 
 				if (Iregs->Motor_PWM_Out > 0) {
 					__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_2, 0);
@@ -239,7 +238,7 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan1)
 
 	if (HAL_CAN_GetRxMessage(hcan1, CAN_RX_FIFO0, &RxHeader, RxData) == HAL_OK) {
 		motor_current = Decode(RxData, 0, 11, 1);
-		Rack_position = Decode(RxData, 12, 12, 1);
+		Rack_position = Decode(RxData, 11, 12, 1);
 		Rack_force    = Decode(RxData, 23, 16, 1);
 		//	pwm = Decode(RxData, 33, 1, 12, 1);
 
