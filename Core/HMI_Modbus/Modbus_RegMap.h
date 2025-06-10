@@ -21,7 +21,7 @@ typedef struct HoldingRegs
     //part 2 is the system states that need to be read/write
     float Motor_I_SP;
 
-    float Motor_EA_SP;//Encoder angle
+
 }HoldingRegs_t;
 //////////////////////
 typedef struct InputRegs
@@ -36,6 +36,7 @@ typedef struct InputRegs
     float Motor_I_Error;//8,9
 
     float Motor_Encoder_Error;//10,11
+    float Motor_EA_SP;//Encoder angle//12,13
 
     uint16_t ADC_Raw_Values[12];
 }InputRegs_t;

@@ -5,7 +5,9 @@
 PI_Handle_t PI_Handle;
 float  Encoder_Angle=0;
 float LinerDisp;
-
+float PWM_Out;
+float KP,KI;
+uint8_t t;
 //----------------------------------------------------------------------------//
 //                             CAN-related definitions                        //
 //----------------------------------------------------------------------------//
@@ -66,7 +68,7 @@ void Application_Init(void)
 
 
 	//-------------- Encoder Timer (TIM4) initialization --------------//
-	HAL_TIM_Encoder_Start_IT(&htim4, TIM_CHANNEL_ALL);
+	HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_ALL);
 
 	//-------------- Motor timer (TIM8) initialization --------------//
 	HAL_TIM_Base_Start(&htim8);
@@ -89,7 +91,7 @@ void Application_Init(void)
 			&PI_Handle,
 			MaxOut,
 			DefaultParams.I_Control_Kp,
-			DefaultParams.I_Control_Ki,
+	     	DefaultParams.I_Control_Ki,
 			KC,
 			DefaultParams.Controller_Sampling_Time
 	);
@@ -133,7 +135,7 @@ inline void Application_Run(void)
 		//Calucate Encoder Angle
 		Encoder_Angle= get_encoder_angle((int32_t)__HAL_TIM_GET_COUNTER(&htim4));
 
-		LinerDisp =map_linear(M, Encoder_Angle);
+		LinerDisp =map_linear(M, Rack_position);
 
 		// LED indication based on movement direction
 		if (Encoder_Angle < 0) {
@@ -160,26 +162,27 @@ inline void Application_Run(void)
 
 		//Steering_wheel_speed ,
 		//PWM_output=0 ;
-
+t=1;
 		// PI control update every 5 ms
 		if (HAL_GetTick() >= PID_Ticks) {
-			if (GetCoil(MB_Coil_Enable_PI_Controller)) {
-				Iregs->Motor_PWM_Out = PI_Eval(
+			if (t) {
+				PWM_Out = PI_Eval(
 						&PI_Handle,
-						Hregs->Motor_EA_SP=LinerDisp,   // sp is the desired value from the interoplation
+						Iregs->Motor_EA_SP=LinerDisp,   // sp is the desired value from the interoplation
 						Iregs->Encoder_Angle=Encoder_Angle        // actual current actual angle
 				);
+				Iregs->Motor_PWM_Out=PWM_Out;
 				Iregs->Motor_Encoder_Error = PI_Handle.Error;
 
-				if (Iregs->Motor_PWM_Out > 0) {
-					__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_2, 0);
-					__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_1, (uint16_t) Iregs->Motor_PWM_Out);
-				} else {
-					Iregs->Motor_PWM_Out = fabsf(Iregs->Motor_PWM_Out);
+				if (PWM_Out > 0) {
 					__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_1, 0);
+					__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_2, (uint16_t) PWM_Out);
+				} else {
+					PWM_Out = fabsf(PWM_Out);
+					__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_2, 0);
 					//__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_2,
 					//        (uint16_t )PI_Control_Duty);
-					//__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_2, (uint16_t )Iregs->Motor_PWM_Out);
+					__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_1, (uint16_t )PWM_Out);
 				}
 			} else {
 				__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_2, 0);
@@ -255,3 +258,4 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan1)
 	HAL_UART_Transmit(&huart1, (uint8_t *)uartBuffer, strlen(uartBuffer), 200);
 	//CDC_Transmit_FS((uint8_t*) uartBuffer, strlen(uartBuffer));
 }
+
