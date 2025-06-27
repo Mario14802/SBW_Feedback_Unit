@@ -21,6 +21,7 @@ typedef struct
 	float KI;
 	float KC; //Integral Attenuation Factor
 	float Ts; //Controller Sampling Time
+	float PI_Excess;
 
 }PI_Handle_t;
 

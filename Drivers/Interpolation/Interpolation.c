@@ -25,8 +25,8 @@ mapping_t M =
 				.output_max = 180.0f,
 				.output_min = -180.0f,
 				//LINEAR VALUES
-				.input_max = 75.0f,
-				.input_min = -75.0f,
+				.input_max = 59.0f,
+				.input_min = -59.0f,
 
 				};
 

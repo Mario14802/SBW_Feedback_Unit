@@ -3,10 +3,11 @@
 
 // PI controller handle
 PI_Handle_t PI_Handle;
-float  Encoder_Angle=0;
+float  Encoder_Angle;
 float LinerDisp;
+float PI_Out;
 float PWM_Out;
-float KP,KI;
+
 uint8_t t;
 //----------------------------------------------------------------------------//
 //                             CAN-related definitions                        //
@@ -91,8 +92,8 @@ void Application_Init(void)
 			&PI_Handle,
 			MaxOut,
 			DefaultParams.I_Control_Kp,
-	     	DefaultParams.I_Control_Ki,
-			KC,
+			DefaultParams.I_Control_Ki,
+			DefaultParams.I_Control_Kc,
 			DefaultParams.Controller_Sampling_Time
 	);
 	HAL_TIM_Base_Start_IT(&htim6); //to call the pi evaluat fun every 5 ms
@@ -100,7 +101,7 @@ void Application_Init(void)
 
 
 	//--------------Interpolation initialization --------------//
-/*	//ENCODER VALUES
+	/*	//ENCODER VALUES
 	M->output_max = 75.0f;
 	M->output_min = -75.0f;
 	//LINEAR VALUES
@@ -160,31 +161,40 @@ inline void Application_Run(void)
 		//Encoder_angle
 		steering_wheel_angle =Encoder_Angle;
 
-		//Steering_wheel_speed ,
-		//PWM_output=0 ;
-t=1;
+
+		Iregs->Encoder_Angle=Encoder_Angle;
+		Iregs->Motor_EA_SP=LinerDisp  ;
+
+		t=1;
 		// PI control update every 5 ms
 		if (HAL_GetTick() >= PID_Ticks) {
 			if (t) {
-				PWM_Out = PI_Eval(
+				PI_Out = PI_Eval(
 						&PI_Handle,
-						Iregs->Motor_EA_SP=LinerDisp,   // sp is the desired value from the interoplation
-						Iregs->Encoder_Angle=Encoder_Angle        // actual current actual angle
+						Encoder_Angle,
+						LinerDisp // SP is the desired value from the interoplation
+						// PV actual current actual angle
 				);
+				PWM_Out=PI_Out;
 				Iregs->Motor_PWM_Out=PWM_Out;
 				Iregs->Motor_Encoder_Error = PI_Handle.Error;
 
 				if (PWM_Out > 0) {
-					__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_1, 0);
-					__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_2, (uint16_t) PWM_Out);
+					__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_2, 0);
+					__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_1, (uint16_t) PWM_Out);
+
 				} else {
 					PWM_Out = fabsf(PWM_Out);
-					__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_2, 0);
-					//__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_2,
-					//        (uint16_t )PI_Control_Duty);
-					__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_1, (uint16_t )PWM_Out);
+
+					__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_1, 0);
+					__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_2, (uint16_t )PWM_Out);
+
 				}
-			} else {
+
+
+			}
+
+			else {
 				__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_2, 0);
 				__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_1, 0);
 			}
@@ -222,10 +232,10 @@ void Compute_Analog_Measurements(void)
 {
 	//calculate the Vbus voltage
 	Iregs->Vbus = ((float) Iregs->ADC_Raw_Values[1] * (DefaultParams.Vmotor_Sense_Gain))
-                										  - (DefaultParams.Vmotor_Sense_Offset);
+                																						  - (DefaultParams.Vmotor_Sense_Offset);
 	Iregs->I_OUT = ((float) Iregs->ADC_Raw_Values[0] * (DefaultParams.I_Sense_Gain)
 			- (DefaultParams.I_Sense_Offset + DefaultParams.Amplifier_offset))
-                										   * 1000.0f;
+                																						   * 1000.0f;
 }
 
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
@@ -255,7 +265,7 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan1)
 	} else {
 		sprintf(uartBuffer, "Error receiving message!\n");
 	}
-	HAL_UART_Transmit(&huart1, (uint8_t *)uartBuffer, strlen(uartBuffer), 200);
+	////	HAL_UART_Transmit(&huart1, (uint8_t *)uartBuffer, strlen(uartBuffer), 200);
 	//CDC_Transmit_FS((uint8_t*) uartBuffer, strlen(uartBuffer));
 }
 

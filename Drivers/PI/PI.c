@@ -38,7 +38,7 @@ float PI_Eval(PI_Handle_t *p, float SetPoint, float PV)
 
     // Compute the excess amount beyond saturation
     float Excess = Temp - p->Out;
-
+    p->PI_Excess = Excess;
     // Update the integral term with anti-windup correction
     p->SumError += (p->Error * p->KI * p->Ts) - (p->KC * Excess);
 
