@@ -11,7 +11,7 @@ typedef struct
     float I_Filter_Fc; //4,5
     float Controller_Sampling_Time; //6,7
 
-    float I_Control_Max_Out;//8,9
+    float Control_Max_Out;//8,9
 
 
     //Current sensor filter constant
@@ -30,8 +30,9 @@ typedef struct
     float Torque_Signal_Gain;
     float Torque_Signal_offset;
     float Angle_Sensor_Fc; //LPF cutoff frequency
-    float  Amplifier_offset;//amplifier offset
+    float Amplifier_offset;//amplifier offset
     float I_Control_Kc;
+
 
     uint16_t Checksum; //38,39
 

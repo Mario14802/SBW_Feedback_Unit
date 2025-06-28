@@ -54,8 +54,9 @@ enum CoilBits // 0 till 15
 	MB_Coil_Enable_PI_Controller,//1
 	MB_Coil_Update_Params,//2
 	MB_Coil_Load_Defaults,//3
-	MB_Coil_TimerCNT_Reset//4
-
+	MB_Coil_TimerCNT_Reset,//4
+	MB_Coil_Update_MAXOUT,//5 //execl
+	MB_Coil_Update_KC//6
 };
 #define GetInputBit(bit) MB_Parse_Bit(MB.InputBits, bit)
 #define SetInputBit(bit, State) MB_Encode_Bit(MB.InputBits, bit, State)

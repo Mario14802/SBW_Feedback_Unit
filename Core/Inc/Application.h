@@ -19,6 +19,8 @@
 #include "../../Drivers/Incremntal Encoder/Encoder.h"
 #include "../../Drivers/Interpolation/Interpolation.h"
 #include "Feedback_CAN.h"
+#include "../USB_Modbus/USB_Modbus.h"
+#include "../App/usbd_cdc_if.h"
 
 extern ADC_HandleTypeDef hadc1;
 extern CAN_FilterTypeDef canFilterConfig;
@@ -39,6 +41,8 @@ extern UART_HandleTypeDef huart1;
 
 extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
 
+extern USBD_CDC_HandleTypeDef  hUsbDeviceFS;
+
 extern const SystemParams_t DefaultParams;
 
 extern PI_Handle_t PI_Handle;
@@ -46,8 +50,9 @@ extern PI_Handle_t PI_Handle;
 //interpolation
 extern mapping_t M;
 
-#define KC 0.9
-#define MaxOut 2000
+//#define KC 0.9
+#define MaxOut 500
+
 
 //Maximum allowed output (saturation limit)
 
@@ -55,6 +60,7 @@ extern mapping_t M;
 #define SLA 0x1
 
 extern MB_Slave_t MB;
+extern MB_Slave_t USB_MB;
 
 void Application_Init();
 

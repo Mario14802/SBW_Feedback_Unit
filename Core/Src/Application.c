@@ -7,8 +7,15 @@ float  Encoder_Angle;
 float LinerDisp;
 float PI_Out;
 float PWM_Out;
-
 uint8_t t;
+
+
+MB_Status_t Modbus_CallBack(void *context) {
+    MB_Slave_t *mb = (MB_Slave_t *)context;
+    // ... service your request, fill mb->Response[], set ResponseLength ...
+    return MB_STAT_OK;
+}
+
 //----------------------------------------------------------------------------//
 //                             CAN-related definitions                        //
 //----------------------------------------------------------------------------//
@@ -54,6 +61,21 @@ void Application_Init(void)
 {
 	//-------------- Modbus initialization --------------//
 	MB_Init_UART1(&huart1, 0x1);
+	MB_Init_USB_MODBUS(&hUsbDeviceFS,0x2);
+
+
+	MB.hw_interface.MB_Request_Recieved=&Modbus_CallBack;
+	USB_MB.hw_interface.MB_Request_Recieved=&Modbus_CallBack;
+
+	free(USB_MB.HoldingRegs);
+	free(USB_MB.InputRegs);
+	free(USB_MB.InputBits);
+	free(USB_MB.CoilBits);
+
+	USB_MB.HoldingRegs=MB.HoldingRegs;
+	USB_MB.InputRegs=MB.InputRegs;
+	USB_MB.InputBits=MB.InputBits;
+	USB_MB.CoilBits=MB.CoilBits;
 
 	//-------------- CAN initialization --------------//
 
@@ -90,7 +112,7 @@ void Application_Init(void)
 	//-------------- PI controller initialization --------------//
 	PI_Init(
 			&PI_Handle,
-			MaxOut,
+			DefaultParams.Control_Max_Out,
 			DefaultParams.I_Control_Kp,
 			DefaultParams.I_Control_Ki,
 			DefaultParams.I_Control_Kc,
@@ -114,19 +136,16 @@ void Application_Init(void)
 //----------------------------------------------------------------------------//
 inline void Application_Run(void)
 {
-	//uint32_t Ticks = HAL_GetTick();
+
 	uint32_t PID_Ticks = HAL_GetTick();
-	//
-	//HAL_StatusTypeDef S;
+
 
 	while (1) {
 		// Modbus routine
 		MB_Slave_Routine(&MB, HAL_GetTick());
 
+		MB_Slave_Routine(&USB_MB, HAL_GetTick());
 
-
-		//HAL_Delay(100);
-		//Encoder_Angle
 		if(GetCoil(MB_Coil_TimerCNT_Reset))//if coil =1
 		{
 			__HAL_TIM_GET_COUNTER(&htim4)=0;
@@ -149,7 +168,7 @@ inline void Application_Run(void)
 			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13|GPIO_PIN_14, GPIO_PIN_RESET);
 		}
 
-		//	HAL_Delay(5);
+
 
 
 		//ADC VALUES
@@ -165,14 +184,15 @@ inline void Application_Run(void)
 		Iregs->Encoder_Angle=Encoder_Angle;
 		Iregs->Motor_EA_SP=LinerDisp  ;
 
-		t=1;
+t=1;
 		// PI control update every 5 ms
 		if (HAL_GetTick() >= PID_Ticks) {
 			if (t) {
 				PI_Out = PI_Eval(
 						&PI_Handle,
-						Encoder_Angle,
-						LinerDisp // SP is the desired value from the interoplation
+						LinerDisp,
+						Encoder_Angle
+						// SP is the desired value from the interoplation
 						// PV actual current actual angle
 				);
 				PWM_Out=PI_Out;
@@ -180,14 +200,13 @@ inline void Application_Run(void)
 				Iregs->Motor_Encoder_Error = PI_Handle.Error;
 
 				if (PWM_Out > 0) {
-					__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_2, 0);
-					__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_1, (uint16_t) PWM_Out);
+					__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_1, 0);
+					__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_2, (uint16_t )PWM_Out);
 
 				} else {
 					PWM_Out = fabsf(PWM_Out);
-
-					__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_1, 0);
-					__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_2, (uint16_t )PWM_Out);
+					__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_2, 0);
+					__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_1, (uint16_t) PWM_Out);
 
 				}
 
@@ -215,9 +234,19 @@ inline void Application_Run(void)
 		if (GetCoil(MB_Coil_Update_Params)) {
 			PI_Handle.KP     = Hregs->sParams.I_Control_Kp;
 			PI_Handle.KI     = Hregs->sParams.I_Control_Ki;
-			PI_Handle.OutMax = Hregs->sParams.I_Control_Max_Out;
-			SetCoil(MB_Coil_Update_Params, 0);
+			//SetCoil(MB_Coil_Update_Params, 0);
 		}
+
+		if (GetCoil(MB_Coil_Update_MAXOUT)) {
+			PI_Handle.OutMax = Hregs->sParams.Control_Max_Out;
+			SetCoil(MB_Coil_Update_MAXOUT, 0);
+		}
+
+		if (GetCoil(MB_Coil_Update_KC)) {
+			PI_Handle.OutMax = Hregs->sParams.I_Control_Kc;
+			SetCoil(MB_Coil_Update_KC, 0);
+		}
+
 		if (GetCoil(MB_Coil_Load_Defaults)) {
 			Load_Default_NV_Data();
 			SetCoil(MB_Coil_Load_Defaults, 0);
@@ -232,10 +261,10 @@ void Compute_Analog_Measurements(void)
 {
 	//calculate the Vbus voltage
 	Iregs->Vbus = ((float) Iregs->ADC_Raw_Values[1] * (DefaultParams.Vmotor_Sense_Gain))
-                																						  - (DefaultParams.Vmotor_Sense_Offset);
+                																														  - (DefaultParams.Vmotor_Sense_Offset);
 	Iregs->I_OUT = ((float) Iregs->ADC_Raw_Values[0] * (DefaultParams.I_Sense_Gain)
 			- (DefaultParams.I_Sense_Offset + DefaultParams.Amplifier_offset))
-                																						   * 1000.0f;
+                																														   * 1000.0f;
 }
 
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
@@ -260,9 +289,10 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan1)
 				"Received: motor_current=%d, Rack_position=%d, Rack_force=%d\n ",
 				motor_current,
 				Rack_position,
-				Rack_force
+				+		Rack_force
 		);
-	} else {
+	}
+	else {
 		sprintf(uartBuffer, "Error receiving message!\n");
 	}
 	////	HAL_UART_Transmit(&huart1, (uint8_t *)uartBuffer, strlen(uartBuffer), 200);

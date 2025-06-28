@@ -21,7 +21,7 @@ void Encode(uint8_t *txdata, uint8_t start_bit, uint8_t length,
 
 	// Insert value into txdata at correct bit position
 	for (uint8_t i = 0; i < length; i++) {
-		uint8_t byte_index = (start_bit + i) / 8;  // `txdata`byte postion
+  		uint8_t byte_index = (start_bit + i) / 8;  // `txdata`byte postion
 		uint8_t bit_position = (start_bit + i) % 8; // bit postion
 
 		if (newValue & (1 << i)) {
